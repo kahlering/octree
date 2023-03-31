@@ -62,7 +62,7 @@ public:
      * @param max_dist The radius of the search 
      * @return std::vector<T> A vector that contains all points in the search area
      */
-    std::vector<typename IT::pointer> get_points_in_radius(const T* query_point, const double radius) const;
+    std::vector<T> get_points_in_radius(const T& query_point, const double radius) const;
 
 private:
 
@@ -78,7 +78,7 @@ private:
          * @param begin An iterator to the first point in the node
          * @param end An iterator to the last point in the node
          */
-        Node(double x, double y, double z, double size, typename std::vector<T*>::iterator begin, typename std::vector<T*>::iterator end);
+        Node(double x, double y, double z, double size, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end);
 
         // returns true if this node is a leaf, otherwise false
         bool is_leaf() const;
@@ -98,9 +98,9 @@ private:
         // The indices of of the child nodes in the Octree::nodes vector
         std::array<size_t, 8> children;
         // An iterator to the first point in the node
-        typename std::vector<T*>::iterator begin;
+        typename std::vector<T>::iterator begin;
         // An iterator to the last point in the node
-        typename std::vector<T*>::iterator end;
+        typename std::vector<T>::iterator end;
     };
 
     // defines the position of child nodes in their parent node. 
@@ -113,7 +113,7 @@ private:
     // The maximum depth of the octree.
     size_t max_depth;
     // A vector that contains the point cloud.
-    std::vector<T*> points;
+    std::vector<T> points;
     // A vector that contains the nodes of the octree
     std::vector<Node> nodes;
     // a Function object to access the coordinates of the points
@@ -141,16 +141,13 @@ private:
      * @param n The node to search in.
      * @param points std::vector<T> The matching points will be added to this vector.
      */
-    void get_points_in_radius(const T* query_point, const double& max_dist, const Node& n, std::vector<T*>& points) const;
+    void get_points_in_radius(const T& query_point, const double& max_dist, const Node& n, std::vector<T>& points) const;
 };
 
 
 template<typename IT, typename F>
-Octree<IT, F>::Octree(const IT begin, const IT end, const size_t bucket_size, const size_t max_depth, F&& get_coords): bucket_size(bucket_size), max_depth(max_depth), get_coords(get_coords)
+Octree<IT, F>::Octree(const IT begin, const IT end, const size_t bucket_size, const size_t max_depth, F&& get_coords): bucket_size(bucket_size), max_depth(max_depth), get_coords(get_coords), points(begin, end)
 {
-    for(auto it = begin; it != end; ++it){
-        points.emplace_back(&(*it));
-    }
     std::array<double, 4> d = get_dimensions();
     nodes.emplace_back(d[0], d[1], d[2], d[3], points.begin(), points.end());
     build_tree(0, 0);
@@ -158,7 +155,7 @@ Octree<IT, F>::Octree(const IT begin, const IT end, const size_t bucket_size, co
 
 
 template<typename IT, typename F>
-Octree<IT, F>::Node::Node(double x, double y, double z, double size, typename std::vector<T*>::iterator begin, typename std::vector<T*>::iterator end):
+Octree<IT, F>::Node::Node(double x, double y, double z, double size, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end):
 x(x), y(y), z(z), size(size), begin(begin), end(end),children{0}
 {
 };
@@ -195,17 +192,17 @@ void Octree<IT, F>::build_tree(const size_t node_idx, const size_t current_depth
     const auto begin = nodes[node_idx].begin;
     const auto end = nodes[node_idx].end;
 
-    std::array<typename std::vector<T*>::iterator, 9> its;
+    std::array<typename std::vector<T>::iterator, 9> its;
     its[0] = begin;
     its[8] = end;
-    its[4] = std::partition(begin, end, [x, this](const T* v) { return get_coords(v)[0] < x; });
-    its[2] = std::partition(begin, its[4], [y, this](const T* v) { return get_coords(v)[1] < y; });
-    its[6] = std::partition(its[4], end, [y, this](const T* v) { return get_coords(v)[1] < y; });
+    its[4] = std::partition(begin, end, [x, this](const T& v) { return get_coords(v)[0] < x; });
+    its[2] = std::partition(begin, its[4], [y, this](const T& v) { return get_coords(v)[1] < y; });
+    its[6] = std::partition(its[4], end, [y, this](const T& v) { return get_coords(v)[1] < y; });
 
-    its[1] = std::partition(begin, its[2], [z, this](const T* v) { return get_coords(v)[2] < z; });
-    its[3] = std::partition(its[2], its[4], [z, this](const T* v) { return get_coords(v)[2] < z; });
-    its[5] = std::partition(its[4], its[6], [z, this](const T* v) { return get_coords(v)[2] < z; });
-    its[7] = std::partition(its[6], end, [z, this](const T* v) { return get_coords(v)[2] < z; });
+    its[1] = std::partition(begin, its[2], [z, this](const T& v) { return get_coords(v)[2] < z; });
+    its[3] = std::partition(its[2], its[4], [z, this](const T& v) { return get_coords(v)[2] < z; });
+    its[5] = std::partition(its[4], its[6], [z, this](const T& v) { return get_coords(v)[2] < z; });
+    its[7] = std::partition(its[6], end, [z, this](const T& v) { return get_coords(v)[2] < z; });
 
     for(size_t i = 0; i < 8; ++i)
     {
@@ -227,7 +224,7 @@ std::array<double, 4> Octree<IT, F>::get_dimensions()
     double min_y = +std::numeric_limits<double>::infinity();
     double max_z = -std::numeric_limits<double>::infinity();
     double min_z = +std::numeric_limits<double>::infinity();
-    for(const T* p : points)
+    for(const T& p : points)
     {
         auto coords = get_coords(p);
         max_x = std::max(max_x, coords[0]);
@@ -246,15 +243,15 @@ std::array<double, 4> Octree<IT, F>::get_dimensions()
 
 
 template<typename IT, typename F>
-std::vector<typename IT::pointer> Octree<IT, F>::get_points_in_radius(const T* query_point, const double max_dist) const
+std::vector<typename IT::value_type> Octree<IT, F>::get_points_in_radius(const T& query_point, const double max_dist) const
 {
-    std::vector<T*> result;
+    std::vector<T> result;
     get_points_in_radius(query_point, max_dist, nodes[0], result);
     return result;
 }
 
 template<typename IT, typename F>
-void Octree<IT, F>::get_points_in_radius(const T* query_point, const double& max_dist, const Node& n, std::vector<T*>& points) const
+void Octree<IT, F>::get_points_in_radius(const T& query_point, const double& max_dist, const Node& n, std::vector<T>& points) const
 {
     auto coords_query = get_coords(query_point);
     double distance_to_node = std::sqrt(std::pow(n.x - coords_query[0], 2) + std::pow(n.y - coords_query[1], 2) + std::pow(n.z - coords_query[2], 2));
@@ -271,7 +268,7 @@ void Octree<IT, F>::get_points_in_radius(const T* query_point, const double& max
 
     if (n.is_leaf())
     {
-        for (typename std::vector<T*>::const_iterator it = n.begin; it != n.end; it++)
+        for (typename std::vector<T>::const_iterator it = n.begin; it != n.end; it++)
         {
             auto coords_it = get_coords(*it);
             double distance_points = std::sqrt(std::pow(coords_it[0] - coords_query[0], 2) + std::pow(coords_it[1] - coords_query[1], 2) + std::pow(coords_it[2] - coords_query[2], 2));

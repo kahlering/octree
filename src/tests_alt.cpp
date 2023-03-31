@@ -1,6 +1,6 @@
 
 
-#include <octree.hpp>
+#include "octree_alt.hpp"
 
 #include <iostream>
 #include <list>
@@ -286,12 +286,12 @@ void performance_test_cube(size_t bucket_size, size_t max_depth, size_t num_poin
 {
     auto points = generate_random_point_cloud_cube<std::vector<Point>>(num_points, random_seed);
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    Octree tree(points.begin(), points.end(), bucket_size, max_depth, [](const Point* p){return std::array<double, 3>{p->x, p->y, p->z};});
+    Octree tree(points.begin(), points.end(), bucket_size, max_depth, [](const Point& p){return std::array<double, 3>{p.x, p.y, p.z};});
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "it took = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[us] to construct the octree with bucket size " << bucket_size << " and max depth " << max_depth << " and " << num_points << std::endl;
 
     begin = std::chrono::steady_clock::now();
-    auto r = tree.get_points_in_radius(&points[0], 1.0);
+    auto r = tree.get_points_in_radius(points[0], 1.0);
     end = std::chrono::steady_clock::now();
     std::cout << "it took = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[us] to query the octree with bucket size " << bucket_size << " and max depth " << max_depth << " and " << num_points << " points with a random query point " << std::endl;
     std::cout << r.size() << " points were found in the search area" << std::endl;

@@ -28,15 +28,16 @@ int main()
     // The bucket size in this example is 1.
     // The maximum depth is 10.
     // The last argument can be any function object that takes a Point as input and returns an array with the coordinates. In this case it is a lambda function.
-    Octree tree(point_cloud.begin(), point_cloud.end(), 1, 10, [](const Point& p) {return std::array<double, 3>{p.x, p.y, p.z}; });
+    Octree tree(point_cloud.begin(), point_cloud.end(), 1, 10, [](const Point* p) {return std::array<double, 3>{p->x, p->y, p->z}; });
     
+    Point p(2.0, 2.0, 2.0);
     // query the tree with the query point (2.0, 2.0, 2.0) and a search radius of 1.0
-    std::vector<Point> result =  tree.get_points_in_radius(Point(2.0, 2.0, 2.0), 1.0);
+    std::vector<Point*> result =  tree.get_points_in_radius(&p, 1.0);
 
     std::cout << "result" << std::endl;
     for (size_t i = 0; i < result.size(); ++i)
     {
-        std::cout << i << ": " <<  result[i].x << " " << result[i].y << " " << result[i].z << std::endl;
+        std::cout << i << ": " <<  result[i]->x << " " << result[i]->y << " " << result[i]->z << std::endl;
     }
 }
 
