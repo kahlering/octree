@@ -31,8 +31,8 @@
  * @brief The Octree class.
  *
  * @tparam IT Point cloud iterator
- * @tparam F Function object to make the coordinates of every Point type accessible to the octree. It takes IT::value_type
- *      as input and returns an array<double, 3> = {x, y, z}
+ * @tparam F Function object to make the coordinates of every Point type accessible to the octree. It should take IT::pointer
+ *         as input and return a std::tuple<double, double, double> = {x, y, z}
  */
 template <typename IT, typename F>
 class Octree {
