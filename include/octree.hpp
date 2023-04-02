@@ -26,6 +26,7 @@
 #include <limits>
 #include <numbers>
 #include <vector>
+#include <tuple>
 
 /**
  * @brief The Octree class.
